@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Karl — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Mulish:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0d0d;
+  --s1: #181818;
+  --s2: #222;
+  --s3: #2a2a2a;
+  --border: #333;
+  --yellow: #E8C13A;
+  --red: #CC2200;
+  --blue: #2255CC;
+  --green: #1db954;
+  --orange: #ff6b2b;
+  --purple: #9b59b6;
+  --text: #f0f0f0;
+  --muted: #777;
+  --radius: 14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:'Mulish',sans-serif;min-height:100vh}
+body{max-width:430px;margin:0 auto;padding:0 0 88px}
+
+/* HEADER */
+.header{padding:20px 18px 10px;background:var(--s1);border-bottom:1px solid var(--border)}
+.header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.greeting{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;line-height:1.15}
+.greeting span{color:var(--yellow)}
+.date-chip{background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.05em}
+.progress-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.prog-card{background:var(--s2);border-radius:10px;padding:8px 10px;border:1px solid var(--border);cursor:pointer;transition:border-color .2s}
+.prog-card.active{border-color:var(--yellow)}
+.prog-num{font-family:'Syne',sans-serif;font-size:17px;font-weight:800}
+.prog-label{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.04em;margin-top:1px}
+.prog-bar{height:3px;border-radius:2px;margin-top:6px;background:var(--s3);overflow:hidden}
+.prog-bar-fill{height:100%;border-radius:2px;transition:width .5s}
+
+/* NAV */
+.nav{display:flex;gap:5px;padding:10px 18px;overflow-x:auto;scrollbar-width:none;background:var(--s1);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{flex-shrink:0;padding:7px 15px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;font-weight:700;font-family:'Mulish',sans-serif;cursor:pointer;transition:all .2s;letter-spacing:.03em}
+.nav-btn.active{background:var(--yellow);border-color:var(--yellow);color:#000}
+
+/* SECTIONS */
+.section{display:none;padding:14px 18px}
+.section.active{display:block}
+.sec-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+/* HORAIRE */
+.timeline{position:relative}
+.tl-item{display:flex;gap:12px;margin-bottom:4px;position:relative}
+.tl-left{display:flex;flex-direction:column;align-items:center;width:52px;flex-shrink:0}
+.tl-time{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);text-align:center;line-height:1.2}
+.tl-dot{width:10px;height:10px;border-radius:50%;background:var(--border);margin:4px 0;flex-shrink:0}
+.tl-line{width:2px;flex:1;background:var(--border);min-height:20px}
+.tl-card{flex:1;background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:8px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.tl-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.tl-card.peak::before{background:var(--yellow)}
+.tl-card.focus::before{background:var(--blue)}
+.tl-card.body::before{background:var(--green)}
+.tl-card.family::before{background:var(--red)}
+.tl-card.rest::before{background:var(--purple)}
+.tl-card-title{font-size:13px;font-weight:700;margin-bottom:2px}
+.tl-card-sub{font-size:11px;color:var(--muted);line-height:1.4}
+.tl-badge{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:.03em}
+.badge-peak{background:rgba(232,193,58,.15);color:var(--yellow)}
+.badge-focus{background:rgba(34,85,204,.15);color:#5b8fff}
+.badge-body{background:rgba(29,185,84,.15);color:var(--green)}
+.tl-edit-btn{display:none;position:absolute;right:8px;top:8px;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:3px 8px;font-size:11px;color:var(--text);cursor:pointer}
+.edit-mode .tl-edit-btn{display:block}
+.edit-mode .tl-badge{display:none}
+
+/* EDIT MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--s1);border-radius:20px 20px 0 0;padding:20px 18px 32px;width:100%;max-width:430px;border-top:1px solid var(--border)}
+.modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;margin-bottom:16px}
+.modal input,.modal textarea,.modal select{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Mulish',sans-serif;font-size:14px;outline:none;margin-bottom:10px}
+.modal textarea{resize:none;min-height:70px}
+.modal-actions{display:flex;gap:8px;margin-top:4px}
+.btn-save{flex:1;padding:12px;background:var(--yellow);border:none;border-radius:10px;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:#000;cursor:pointer}
+.btn-cancel{padding:12px 20px;background:var(--s2);border:1px solid var(--border);border-radius:10px;font-family:'Mulish',sans-serif;font-size:14px;color:var(--muted);cursor:pointer}
+.btn-delete{padding:12px 16px;background:rgba(204,34,0,.15);border:1px solid rgba(204,34,0,.3);border-radius:10px;font-family:'Mulish',sans-serif;font-size:14px;color:var(--red);cursor:pointer}
+
+/* HABITUDES */
+.cat-header{display:flex;align-items:center;gap:8px;margin:16px 0 8px}
+.cat-header:first-child{margin-top:0}
+.cat-dot{width:8px;height:8px;border-radius:50%}
+.cat-name{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.habit-row{background:var(--s1);border:1px solid var(--border);border-radius:12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;transition:all .2s;user-select:none;position:relative}
+.habit-row.done{border-color:rgba(29,185,84,.35);background:rgba(29,185,84,.04)}
+.habit-row.done .habit-name{color:var(--muted);text-decoration:line-through}
+.hcheck{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;font-size:12px}
+.habit-row.done .hcheck{background:var(--green);border-color:var(--green);color:#000}
+.habit-name{font-size:13px;font-weight:600;flex:1}
+.habit-streak{font-size:11px;font-weight:700;color:var(--orange)}
+.habit-edit-btn{display:none;background:var(--s3);border:1px solid var(--border);border-radius:6px;padding:2px 7px;font-size:11px;color:var(--muted);cursor:pointer;flex-shrink:0}
+.habit-edit-btn-left{background:rgba(255,107,43,.15);border:1px solid var(--orange);border-radius:8px;padding:4px 10px;font-size:13px;color:var(--orange);cursor:pointer;flex-shrink:0;font-family:'Mulish',sans-serif}
+.edit-mode .habit-edit-btn{display:block}
+.add-habit-btn{width:100%;background:transparent;border:1px dashed var(--border);border-radius:12px;padding:11px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'Mulish',sans-serif;margin-top:4px;transition:all .2s}
+.add-habit-btn:hover{border-color:var(--yellow);color:var(--yellow)}
+
+/* OBJECTIFS */
+.goal-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;position:relative}
+.goal-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.goal-title-wrap{display:flex;align-items:center;gap:8px}
+.goal-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:800}
+.goal-pct{font-family:'Syne',sans-serif;font-size:20px;font-weight:800}
+.goal-track{height:4px;background:var(--s3);border-radius:2px;overflow:hidden;margin-bottom:10px}
+.goal-fill{height:100%;border-radius:2px;transition:width .5s}
+.goal-step{font-size:12px;color:var(--muted);padding:5px 0;display:flex;align-items:center;gap:8px;cursor:pointer;border-bottom:1px solid var(--s3)}
+.goal-step:last-child{border-bottom:none}
+.goal-step.done{color:var(--green)}
+.step-dot{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;transition:all .2s}
+.goal-step.done .step-dot{background:var(--green);border-color:var(--green)}
+
+/* CALENDAR */
+.cal-wrap{border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--s1)}
+.cal-placeholder{padding:40px 20px;text-align:center}
+.cal-placeholder p{color:var(--muted);font-size:13px;line-height:1.7}
+.cal-input-wrap{padding:14px}
+.cal-input-wrap input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'Mulish',sans-serif;font-size:12px;outline:none;margin-bottom:8px}
+.cal-input-wrap button{width:100%;background:var(--yellow);border:none;border-radius:10px;padding:10px;font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:#000;cursor:pointer}
+.cal-frame{width:100%;height:420px;border:none;display:block;filter:invert(1) hue-rotate(180deg)}
+
+/* NOTES */
+.note-composer{background:var(--s1);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+.note-composer textarea{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:'Mulish',sans-serif;font-size:13px;resize:none;min-height:70px;line-height:1.6}
+.note-composer textarea::placeholder{color:var(--muted)}
+.note-tags{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.ntag{padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;font-family:'Mulish',sans-serif;transition:all .2s}
+.ntag.active.sante{background:rgba(29,185,84,.15);color:var(--green);border-color:var(--green)}
+.ntag.active.travail{background:rgba(232,193,58,.15);color:var(--yellow);border-color:var(--yellow)}
+.ntag.active.perso{background:rgba(34,85,204,.15);color:#5b8fff;border-color:#5b8fff}
+.ntag.active.relation{background:rgba(204,34,0,.15);color:#ff6b6b;border-color:#ff6b6b}
+.note-save{float:right;padding:7px 18px;background:var(--yellow);border:none;border-radius:20px;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:#000;cursor:pointer}
+.note-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:7px}
+.note-card-tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-bottom:6px;letter-spacing:.04em}
+.note-card-tag.sante{background:rgba(29,185,84,.15);color:var(--green)}
+.note-card-tag.travail{background:rgba(232,193,58,.15);color:var(--yellow)}
+.note-card-tag.perso{background:rgba(34,85,204,.15);color:#5b8fff}
+.note-card-tag.relation{background:rgba(204,34,0,.15);color:#ff6b6b}
+.note-card p{font-size:13px;color:#ccc;line-height:1.6}
+.note-card-date{font-size:10px;color:var(--muted);margin-top:6px}
+.notes-day-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:14px 0 6px}
+
+/* EDIT TOGGLE */
+.edit-toggle{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-weight:700;font-family:'Mulish',sans-serif;cursor:pointer;transition:all .2s;margin-left:auto}
+.edit-toggle.on{background:rgba(255,107,43,.15);border-color:var(--orange);color:var(--orange)}
+
+/* WIN BANNER */
+.win-banner{display:none;background:rgba(232,193,58,.08);border:1px solid rgba(232,193,58,.25);border-radius:12px;padding:10px 14px;margin-bottom:12px;align-items:center;gap:8px}
+.win-banner p{font-size:12px;color:var(--yellow);font-weight:700}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(13,13,13,.97);border-top:1px solid var(--border);display:flex;padding:10px 0 18px;z-index:100}
+.bni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 0}
+.bni-icon{font-size:19px}
+.bni-label{font-size:9px;font-weight:700;letter-spacing:.05em;color:var(--muted)}
+.bni.active .bni-label{color:var(--yellow)}
+
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+.goal-edit-bar{display:none;justify-content:space-between;align-items:center;padding:0 0 10px;margin-bottom:10px;border-bottom:1px solid var(--s3)}
+.edit-mode-goals .goal-edit-bar{display:flex}
+.goal-edit-btn{background:rgba(255,107,43,.15);border:1px solid var(--orange);border-radius:8px;padding:4px 12px;font-size:12px;color:var(--orange);cursor:pointer;font-family:'Mulish',sans-serif;font-weight:700}
+.add-goal-btn{width:100%;background:transparent;border:1px dashed var(--border);border-radius:12px;padding:12px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'Mulish',sans-serif;margin-top:4px;transition:all .2s;display:none}
+.edit-mode-goals .add-goal-btn{display:block}
+.goal-step-edit-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.goal-step-edit-row input{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-family:'Mulish',sans-serif;font-size:13px;outline:none}
+.goal-step-del{background:rgba(204,34,0,.15);border:1px solid rgba(204,34,0,.3);border-radius:6px;padding:5px 8px;color:var(--red);cursor:pointer;font-size:12px;flex-shrink:0}
+.evolution-bar{margin-top:6px}
+.evo-row{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px}
+.evo-steps-done{font-weight:700}
+.goals-edit-toggle{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-weight:700;font-family:'Mulish',sans-serif;cursor:pointer;transition:all .2s;margin-left:auto}
+.goals-edit-toggle.on{background:rgba(255,107,43,.15);border-color:var(--orange);color:var(--orange)}
+.popping{animation:pop .22s ease}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-row">
+    <div class="greeting">Objectifs & Habits<br><span>Karl K. Boucher</span></div>
+    <div class="date-chip" id="dateBadge">—</div>
+  </div>
+  <div class="progress-row">
+    <div class="prog-card active" onclick="showSection('horaire',null,true)">
+      <div class="prog-num" style="color:var(--yellow)">📅</div>
+      <div class="prog-label">HORAIRE</div>
+      <div class="prog-bar"><div class="prog-bar-fill" style="background:var(--yellow);width:100%"></div></div>
+    </div>
+    <div class="prog-card" onclick="showSection('habitudes',null,true)">
+      <div class="prog-num" id="hScore" style="color:var(--green)">0</div>
+      <div class="prog-label">HABITUDES</div>
+      <div class="prog-bar"><div class="prog-bar-fill" id="hBar" style="background:var(--green);width:0%"></div></div>
+    </div>
+    <div class="prog-card" onclick="showSection('objectifs',null,true)">
+      <div class="prog-num" id="oScore" style="color:var(--blue)">0%</div>
+      <div class="prog-label">OBJECTIFS</div>
+      <div class="prog-bar"><div class="prog-bar-fill" id="oBar" style="background:var(--blue);width:0%"></div></div>
+    </div>
+    <div class="prog-card" onclick="showSection('calendrier',null,true)">
+      <div class="prog-num" style="color:var(--purple)">📆</div>
+      <div class="prog-label">AGENDA</div>
+      <div class="prog-bar"><div class="prog-bar-fill" style="background:var(--purple);width:100%"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button class="nav-btn active" onclick="showSection('horaire',this)">Horaire</button>
+  <button class="nav-btn" onclick="showSection('habitudes',this)">Habitudes</button>
+  <button class="nav-btn" onclick="showSection('objectifs',this)">Objectifs</button>
+  <button class="nav-btn" onclick="showSection('calendrier',this)">Agenda</button>
+  <button class="nav-btn" onclick="showSection('notes',this)">Notes</button>
+</div>
+
+<!-- HORAIRE -->
+<div class="section active" id="horaire">
+  <div class="sec-title">
+    Ma journée
+    <button class="edit-toggle" id="editToggle" onclick="toggleEditMode()">✏️ Modifier</button>
+  </div>
+  <div class="timeline" id="timeline"></div>
+  <button class="add-habit-btn" id="addBlockBtn" style="display:none" onclick="openBlockModal(-1)">+ Ajouter un bloc</button>
+</div>
+
+<!-- HABITUDES -->
+<div class="section" id="habitudes">
+  <div class="sec-title">Habitudes du jour <button class="edit-toggle" id="editToggleHabits" onclick="toggleHabitEdit()">✏️ Modifier</button></div>
+  <div class="win-banner" id="winBanner"><span>🔥</span><p id="winText">—</p></div>
+  <div id="habitList"></div>
+</div>
+
+<!-- OBJECTIFS -->
+<div class="section" id="objectifs">
+  <div class="sec-title">Mes objectifs <button class="goals-edit-toggle" id="goalsEditToggle" onclick="toggleGoalsEdit()">✏️ Modifier</button></div>
+  <div id="goalList"></div>
+  <button class="add-goal-btn" id="addGoalBtn" onclick="openGoalModal(-1)">+ Ajouter un objectif</button>
+</div>
+
+<!-- AGENDA -->
+<div class="section" id="calendrier">
+  <div class="sec-title">Agenda Google</div>
+  <div class="cal-wrap">
+    <div id="calContent">
+      <div class="cal-placeholder">
+        <p style="font-size:28px;margin-bottom:12px">📆</p>
+        <p>Colle ton lien d'intégration Google Calendar ci-dessous pour voir ton agenda ici.</p>
+      </div>
+      <div class="cal-input-wrap">
+        <input type="text" id="calUrl" placeholder="https://calendar.google.com/calendar/embed?src=..." />
+        <button onclick="saveCalUrl()">Connecter mon agenda</button>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.6">
+    Pour trouver ton lien : Google Calendar → ⚙️ Paramètres → ton calendrier → "Intégrer le calendrier" → copie le lien.
+  </p>
+</div>
+
+<!-- NOTES -->
+<div class="section" id="notes">
+  <div class="sec-title">Notes</div>
+  <div class="note-composer">
+    <textarea id="noteInput" placeholder="Une victoire, une pensée, quelque chose qui t'a pesé..."></textarea>
+    <div class="note-tags">
+      <button class="ntag sante" onclick="selectNoteTag(this,'sante')">Santé</button>
+      <button class="ntag travail" onclick="selectNoteTag(this,'travail')">Travail</button>
+      <button class="ntag perso" onclick="selectNoteTag(this,'perso')">Perso</button>
+      <button class="ntag relation" onclick="selectNoteTag(this,'relation')">Relation</button>
+    </div>
+    <button class="note-save" onclick="saveNote()">Sauvegarder</button>
+    <div style="clear:both"></div>
+  </div>
+  <div id="notesList"></div>
+</div>
+
+<!-- MODAL OBJECTIF -->
+<div class="modal-overlay" id="goalModal">
+  <div class="modal">
+    <div class="modal-title" id="goalModalTitle">Modifier l'objectif</div>
+    <input type="text" id="gTitle" placeholder="Titre de l'objectif (ex: 🏋️ Forme physique)" />
+    <select id="gColor">
+      <option value="var(--green)">🟢 Vert</option>
+      <option value="#5b8fff">🔵 Bleu</option>
+      <option value="#ff6b6b">🔴 Rouge</option>
+      <option value="var(--yellow)">🟡 Jaune</option>
+      <option value="var(--orange)">🟠 Orange</option>
+      <option value="var(--purple)">🟣 Mauve</option>
+      <option value="var(--muted)">⚪ Gris</option>
+    </select>
+    <div id="goalStepsList" style="margin-bottom:10px"></div>
+    <button onclick="addGoalStep()" style="width:100%;background:transparent;border:1px dashed var(--border);border-radius:10px;padding:9px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'Mulish',sans-serif;margin-bottom:10px">+ Ajouter une étape</button>
+    <div class="modal-actions">
+      <button class="btn-delete" id="goalDeleteBtn" onclick="deleteGoal()">Supprimer</button>
+      <button class="btn-cancel" onclick="closeModal('goalModal')">Annuler</button>
+      <button class="btn-save" onclick="saveGoal()">Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bnav">
+  <div class="bni active" id="bn-horaire" onclick="showSection('horaire',null,true)"><div class="bni-icon">🕐</div><div class="bni-label">HORAIRE</div></div>
+  <div class="bni" id="bn-habitudes" onclick="showSection('habitudes',null,true)"><div class="bni-icon">✅</div><div class="bni-label">HABITS</div></div>
+  <div class="bni" id="bn-objectifs" onclick="showSection('objectifs',null,true)"><div class="bni-icon">🎯</div><div class="bni-label">OBJECTIFS</div></div>
+  <div class="bni" id="bn-calendrier" onclick="showSection('calendrier',null,true)"><div class="bni-icon">📆</div><div class="bni-label">AGENDA</div></div>
+  <div class="bni" id="bn-notes" onclick="showSection('notes',null,true)"><div class="bni-icon">📝</div><div class="bni-label">NOTES</div></div>
+</div>
+
+<!-- MODAL BLOC HORAIRE -->
+<div class="modal-overlay" id="blockModal">
+  <div class="modal">
+    <div class="modal-title" id="blockModalTitle">Modifier le bloc</div>
+    <input type="text" id="bTime" placeholder="Heure (ex: 5h00)" />
+    <input type="text" id="bTitle" placeholder="Titre du bloc" />
+    <textarea id="bSub" placeholder="Sous-titre / description"></textarea>
+    <select id="bType">
+      <option value="peak">⭐ Peak — matin prioritaire</option>
+      <option value="focus">🎯 Focus — travail profond</option>
+      <option value="body">💪 Corps — sport / mouvement</option>
+      <option value="family">❤️ Famille / couple</option>
+      <option value="rest">🌙 Repos / déconnexion</option>
+      <option value="">— Neutre</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn-delete" id="blockDeleteBtn" onclick="deleteBlock()">Supprimer</button>
+      <button class="btn-cancel" onclick="closeModal('blockModal')">Annuler</button>
+      <button class="btn-save" onclick="saveBlock()">Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL HABITUDE -->
+<div class="modal-overlay" id="habitModal">
+  <div class="modal">
+    <div class="modal-title" id="habitModalTitle">Modifier l'habitude</div>
+    <input type="text" id="hName" placeholder="Nom de l'habitude" />
+    <select id="hCat">
+      <option value="sante">💪 Santé & corps</option>
+      <option value="travail">🎯 Travail & focus</option>
+      <option value="relation">❤️ Relations</option>
+      <option value="perso">🎙️ Projets perso</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn-delete" id="habitDeleteBtn" onclick="deleteHabit()">Supprimer</button>
+      <button class="btn-cancel" onclick="closeModal('habitModal')">Annuler</button>
+      <button class="btn-save" onclick="saveHabit()">Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY = 'karl_v2';
+let editMode = false;
+let editBlockIdx = -1;
+let editHabitIdx = -1;
+let selectedNoteTag = '';
+
+const defaultBlocks = [
+  {time:'5h00', title:'Réveil', sub:'Pas de téléphone — démarrage calme', type:'peak'},
+  {time:'5h15', title:'Routine matinale', sub:'Café · stretching · intention du jour', type:'peak'},
+  {time:'5h45', title:'Entraînement', sub:'30–40 min · corps avant tout', type:'body'},
+  {time:'6h30', title:'Au bureau — Peak zone', sub:'Bloc de travail profond · tâches importantes', type:'focus'},
+  {time:'8h30', title:'Réunions / équipe', sub:'Communications · suivis · emails', type:'focus'},
+  {time:'10h30', title:'Pause · marche', sub:'Air frais · reset cerveau', type:'body'},
+  {time:'12h00', title:'Dîner — vrai repas', sub:'Pas de téléphone à table', type:''},
+  {time:'13h00', title:'Tâches légères / terrain', sub:'Pas de décisions importantes l\'après-midi', type:''},
+  {time:'17h00', title:'Famille · présence réelle', sub:'Téléphone de côté · être là', type:'family'},
+  {time:'20h00', title:'Temps de couple', sub:'Connexion · complicité', type:'family'},
+  {time:'21h30', title:'Déconnexion · bilan', sub:'Cocher les habitudes · note du soir', type:'rest'},
+];
+
+const defaultHabits = [
+  {name:'Entraînement fait', cat:'sante'},
+  {name:'Pas de boisson énergisante', cat:'sante'},
+  {name:'Bon repas du soir', cat:'sante'},
+  {name:'8 verres d\'eau', cat:'sante'},
+  {name:'Au lit avant 22h', cat:'sante'},
+  {name:'Bloc deep work le matin', cat:'travail'},
+  {name:'Pas de téléphone avant 6h', cat:'travail'},
+  {name:'1 tâche difficile en premier', cat:'travail'},
+  {name:'Moment de qualité avec les gars', cat:'relation'},
+  {name:'Présence réelle avec ma blonde', cat:'relation'},
+  {name:'Action podcast (même petite)', cat:'perso'},
+  {name:'Temps dehors / soleil', cat:'perso'},
+];
+
+const defaultGoals = [
+  {title:'🏋️ Forme physique', color:'var(--green)', steps:[
+    'Prendre rendez-vous médecin (Santé Expert)',
+    '3 entraînements cette semaine',
+    'Aucune boisson énergisante 7 jours',
+    'Perdre 5 lbs — étape 1/4',
+    'Retrouver un défi physique (boxe ou autre)',
+  ]},
+  {title:'🧠 Santé mentale', color:'#5b8fff', steps:[
+    'Consulter un médecin privé',
+    'Parler du TDAH au médecin',
+    'Évaluer option médication',
+    'Routine matinale sans téléphone installée',
+  ]},
+  {title:'❤️ Couple & famille', color:'#ff6b6b', steps:[
+    '1 soirée seuls par semaine planifiée',
+    'Activité spéciale avec les gars (hors hockey)',
+    'Réparer / racheter le spa',
+    'Setup extérieur pour l\'été',
+  ]},
+  {title:'🎙️ Le Freak Podcast', color:'var(--yellow)', steps:[
+    'Définir un rythme de publication réaliste',
+    'Enregistrer 1 épisode ce mois-ci',
+    'Planifier 3 prochains invités',
+  ]},
+  {title:'💰 Finances', color:'var(--muted)', steps:[
+    'Faire un budget mensuel réaliste',
+    'Réduire restaurants de 30%',
+    'Planification des repas hebdomadaire',
+  ]},
+];
+
+let state = {blocks:[], habits:[], goals:[], habitDone:{}, goalSteps:{}, streaks:{}, lastDay:'', notes:[], calUrl:'https://calendar.google.com/calendar/embed?src=karlkboucher%40gmail.com&src=vnlvnpdqm3hct2490vd588np6f4rjdf8%40import.calendar.google.com&src=claudiapoulin77%40gmail.com&ctz=America%2FToronto'};
+
+function load() {
+  try { const s = localStorage.getItem(KEY); if(s) state = {...state,...JSON.parse(s)}; } catch(e){}
+  if(!state.blocks.length) state.blocks = defaultBlocks;
+  if(!state.habits.length) state.habits = defaultHabits;
+  if(!state.goals.length) state.goals = defaultGoals;
+  const today = new Date().toDateString();
+  if(state.lastDay !== today) {
+    Object.keys(state.habitDone).forEach(id => {
+      if(!state.streaks[id]) state.streaks[id] = 0;
+      state.streaks[id] = state.habitDone[id] ? state.streaks[id]+1 : 0;
+    });
+    state.habitDone = {};
+    state.lastDay = today;
+    save();
+  }
+}
+
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+
+function showSection(id, btn, fromNav) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.bni').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const bn = document.getElementById('bn-'+id);
+  if(bn) bn.classList.add('active');
+  if(fromNav) {
+    const map = ['horaire','habitudes','objectifs','calendrier','notes'];
+    document.querySelectorAll('.nav-btn').forEach((b,i)=>{ if(map[i]===id) b.classList.add('active'); });
+  }
+  document.querySelectorAll('.prog-card').forEach(c=>c.classList.remove('active'));
+}
+
+// HORAIRE
+function renderTimeline() {
+  const tl = document.getElementById('timeline');
+  const typeLabels = {peak:'PEAK',focus:'FOCUS',body:'CORPS',family:'FAMILLE',rest:'REPOS'};
+  const typeBadge = {peak:'badge-peak',focus:'badge-focus',body:'badge-body'};
+  tl.innerHTML = state.blocks.map((b,i) => `
+    <div class="tl-item">
+      <div class="tl-left">
+        <div class="tl-time">${b.time}</div>
+        <div class="tl-dot" style="${b.type==='peak'?'background:var(--yellow)':b.type==='focus'?'background:var(--blue)':b.type==='body'?'background:var(--green)':b.type==='family'?'background:var(--red)':b.type==='rest'?'background:var(--purple)':''}"></div>
+        ${i < state.blocks.length-1 ? '<div class="tl-line"></div>' : ''}
+      </div>
+      <div class="tl-card ${b.type}" onclick="${editMode?'openBlockModal('+i+')':''}">
+        <div class="tl-card-title">${b.title}</div>
+        <div class="tl-card-sub">${b.sub}</div>
+        ${b.type && typeLabels[b.type] ? `<div class="tl-badge ${typeBadge[b.type]||''}">${typeLabels[b.type]}</div>` : ''}
+        <button class="tl-edit-btn" onclick="event.stopPropagation();openBlockModal(${i})">✏️ Éditer</button>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('addBlockBtn').style.display = editMode ? 'block' : 'none';
+}
+
+function toggleEditMode() {
+  editMode = !editMode;
+  const btn = document.getElementById('editToggle');
+  btn.textContent = editMode ? '✅ Terminer' : '✏️ Modifier';
+  btn.classList.toggle('on', editMode);
+  document.getElementById('timeline').classList.toggle('edit-mode', editMode);
+  document.querySelectorAll('.habit-row').forEach(r=>r.classList.toggle('edit-mode', editMode));
+  renderTimeline();
+  renderHabits();
+}
+
+function openBlockModal(idx) {
+  editBlockIdx = idx;
+  const b = idx >= 0 ? state.blocks[idx] : {time:'',title:'',sub:'',type:''};
+  document.getElementById('blockModalTitle').textContent = idx >= 0 ? 'Modifier le bloc' : 'Nouveau bloc';
+  document.getElementById('bTime').value = b.time;
+  document.getElementById('bTitle').value = b.title;
+  document.getElementById('bSub').value = b.sub;
+  document.getElementById('bType').value = b.type;
+  document.getElementById('blockDeleteBtn').style.display = idx >= 0 ? 'block' : 'none';
+  document.getElementById('blockModal').classList.add('open');
+}
+
+function saveBlock() {
+  const b = {time:document.getElementById('bTime').value, title:document.getElementById('bTitle').value, sub:document.getElementById('bSub').value, type:document.getElementById('bType').value};
+  if(!b.title) return;
+  if(editBlockIdx >= 0) state.blocks[editBlockIdx] = b;
+  else state.blocks.push(b);
+  save(); closeModal('blockModal'); renderTimeline();
+}
+
+function deleteBlock() {
+  if(editBlockIdx >= 0) state.blocks.splice(editBlockIdx, 1);
+  save(); closeModal('blockModal'); renderTimeline();
+}
+
+// HABITUDES
+const catColors = {sante:'var(--green)',travail:'var(--blue)',relation:'var(--red)',perso:'var(--yellow)'};
+const catNames = {sante:'💪 Santé & corps',travail:'🎯 Travail & focus',relation:'❤️ Relations',perso:'🎙️ Projets perso'};
+
+function renderHabits() {
+  const list = document.getElementById('habitList');
+  const cats = ['sante','travail','relation','perso'];
+  let html = '';
+  cats.forEach(cat => {
+    const habits = state.habits.map((h,i)=>({...h,i})).filter(h=>h.cat===cat);
+    if(!habits.length) return;
+    html += `<div class="cat-header"><div class="cat-dot" style="background:${catColors[cat]}"></div><div class="cat-name">${catNames[cat]}</div></div>`;
+    habits.forEach(h => {
+      const done = !!state.habitDone['h'+h.i];
+      const streak = state.streaks['h'+h.i]||0;
+      html += `<div class="habit-row${done?' done':''}" id="hrow${h.i}" ${editMode ? '' : 'onclick="toggleHabit('+h.i+')"'}>
+        ${editMode 
+          ? `<button class="habit-edit-btn-left" onclick="openHabitModal(${h.i})">✏️</button>`
+          : `<div class="hcheck${done?' done':''}">${done?'✓':''}</div>`
+        }
+        <div class="habit-name">${h.name}</div>
+        ${!editMode && streak>1 ? `<div class="habit-streak">${streak}🔥</div>` : ''}
+      </div>`;
+    });
+  });
+  if(editMode) html += `<button class="add-habit-btn" onclick="openHabitModal(-1)">+ Ajouter une habitude</button>`;
+  list.innerHTML = html;
+  updateHabitScore();
+  updateWinBanner();
+}
+
+function toggleHabit(idx) {
+  state.habitDone['h'+idx] = !state.habitDone['h'+idx];
+  save(); renderHabits();
+}
+
+function updateHabitScore() {
+  const total = state.habits.length;
+  const done = Object.values(state.habitDone).filter(Boolean).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('hScore').textContent = done+'/'+total;
+  document.getElementById('hBar').style.width = pct+'%';
+}
+
+function updateWinBanner() {
+  const done = Object.values(state.habitDone).filter(Boolean).length;
+  const total = state.habits.length;
+  const banner = document.getElementById('winBanner');
+  const txt = document.getElementById('winText');
+  if(done >= total && total > 0) { banner.style.display='flex'; txt.textContent='Journée parfaite — tu carbures! 🚀'; }
+  else if(done >= Math.floor(total*0.7)) { banner.style.display='flex'; txt.textContent='Belle journée — tu avances, garde le cap!'; }
+  else banner.style.display='none';
+}
+
+function openHabitModal(idx) {
+  editHabitIdx = idx;
+  const h = idx >= 0 ? state.habits[idx] : {name:'',cat:'sante'};
+  document.getElementById('habitModalTitle').textContent = idx >= 0 ? 'Modifier l\'habitude' : 'Nouvelle habitude';
+  document.getElementById('hName').value = h.name;
+  document.getElementById('hCat').value = h.cat;
+  document.getElementById('habitDeleteBtn').style.display = idx >= 0 ? 'block' : 'none';
+  document.getElementById('habitModal').classList.add('open');
+}
+
+function saveHabit() {
+  const h = {name:document.getElementById('hName').value, cat:document.getElementById('hCat').value};
+  if(!h.name) return;
+  if(editHabitIdx >= 0) state.habits[editHabitIdx] = h;
+  else state.habits.push(h);
+  save(); closeModal('habitModal'); renderHabits();
+}
+
+function deleteHabit() {
+  if(editHabitIdx >= 0) state.habits.splice(editHabitIdx,1);
+  save(); closeModal('habitModal'); renderHabits();
+}
+
+// OBJECTIFS
+let goalsEditMode = false;
+
+function toggleGoalsEdit() {
+  goalsEditMode = !goalsEditMode;
+  const btn = document.getElementById('goalsEditToggle');
+  btn.textContent = goalsEditMode ? '✅ Terminer' : '✏️ Modifier';
+  btn.classList.toggle('on', goalsEditMode);
+  renderGoals();
+}
+
+function renderGoals() {
+  const list = document.getElementById('goalList');
+  list.classList.toggle('edit-mode-goals', goalsEditMode);
+  const addBtn = document.getElementById('addGoalBtn');
+  if(addBtn) addBtn.style.display = goalsEditMode ? 'block' : 'none';
+
+  list.innerHTML = state.goals.map((g,gi) => {
+    const stepsDone = g.steps.filter((_,si)=>state.goalSteps[gi+'_'+si]).length;
+    const pct = g.steps.length ? Math.round(stepsDone/g.steps.length*100) : 0;
+    const remaining = g.steps.length - stepsDone;
+    return `<div class="goal-card">
+      <div class="goal-edit-bar">
+        <div class="goal-title" style="font-size:13px">${g.title}</div>
+        <button class="goal-edit-btn" onclick="openGoalModal(${gi})">✏️ Éditer</button>
+      </div>
+      <div class="goal-top">
+        <div class="goal-title-wrap"><div class="goal-title">${g.title}</div></div>
+        <div class="goal-pct" style="color:${g.color}">${pct}%</div>
+      </div>
+      <div class="goal-track"><div class="goal-fill" style="width:${pct}%;background:${g.color}"></div></div>
+      <div class="evolution-bar">
+        <div class="evo-row">
+          <span><span class="evo-steps-done" style="color:${g.color}">${stepsDone}</span> / ${g.steps.length} étapes complétées</span>
+          <span>${remaining > 0 ? remaining + ' restante' + (remaining>1?'s':'') : '✅ Complété!'}</span>
+        </div>
+      </div>
+      ${g.steps.map((s,si) => {
+        const done = !!state.goalSteps[gi+'_'+si];
+        return `<div class="goal-step${done?' done':''}" onclick="${goalsEditMode?'':('toggleStep('+gi+','+si+')')}">
+          <div class="step-dot" style="${done?'background:'+g.color+';border-color:'+g.color:''}"></div>${s}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+  updateObjectifScore();
+}
+
+function toggleStep(gi,si) {
+  const key = gi+'_'+si;
+  state.goalSteps[key] = !state.goalSteps[key];
+  save(); renderGoals();
+  const els = document.querySelectorAll('.goal-step');
+  els.forEach(el=>{ if(el.onclick && el.onclick.toString().includes(gi+','+si)) { el.classList.add('popping'); setTimeout(()=>el.classList.remove('popping'),300); } });
+}
+
+function updateObjectifScore() {
+  let total=0, done=0;
+  state.goals.forEach((g,gi)=>{ total+=g.steps.length; g.steps.forEach((_,si)=>{ if(state.goalSteps[gi+'_'+si]) done++; }); });
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('oScore').textContent = pct+'%';
+  document.getElementById('oBar').style.width = pct+'%';
+}
+
+// CALENDRIER
+function saveCalUrl() {
+  const url = document.getElementById('calUrl').value.trim();
+  if(!url) return;
+  state.calUrl = url;
+  save();
+  renderCal();
+}
+
+function renderCal() {
+  if(!state.calUrl) return;
+  const wrap = document.getElementById('calContent');
+  wrap.innerHTML = `<iframe class="cal-frame" src="${state.calUrl}" frameborder="0" scrolling="no" allowfullscreen></iframe>
+  <div style="padding:10px 14px;border-top:1px solid var(--border)">
+    <button onclick="resetCal()" style="background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Mulish',sans-serif">🔗 Changer le lien</button>
+  </div>`;
+}
+
+function resetCal() {
+  state.calUrl = '';
+  save();
+  document.getElementById('calContent').innerHTML = `
+    <div class="cal-placeholder"><p style="font-size:28px;margin-bottom:12px">📆</p><p>Colle ton lien d'intégration Google Calendar ci-dessous.</p></div>
+    <div class="cal-input-wrap">
+      <input type="text" id="calUrl" placeholder="https://calendar.google.com/calendar/embed?src=..." />
+      <button onclick="saveCalUrl()">Connecter mon agenda</button>
+    </div>`;
+}
+
+// NOTES
+function selectNoteTag(btn, tag) {
+  document.querySelectorAll('.ntag').forEach(b=>b.classList.remove('active'));
+  if(selectedNoteTag===tag) { selectedNoteTag=''; return; }
+  btn.classList.add('active');
+  selectedNoteTag = tag;
+}
+
+function saveNote() {
+  const txt = document.getElementById('noteInput').value.trim();
+  if(!txt) return;
+  if(!state.notes) state.notes=[];
+  state.notes.unshift({text:txt, tag:selectedNoteTag, date:new Date().toISOString()});
+  save();
+  document.getElementById('noteInput').value='';
+  document.querySelectorAll('.ntag').forEach(b=>b.classList.remove('active'));
+  selectedNoteTag='';
+  renderNotes();
+}
+
+function renderNotes() {
+  const list = document.getElementById('notesList');
+  if(!state.notes||!state.notes.length) { list.innerHTML='<p style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Aucune note encore.</p>'; return; }
+  const groups={};
+  state.notes.forEach(n=>{ const d=new Date(n.date); const k=d.toLocaleDateString('fr-CA',{weekday:'long',day:'numeric',month:'long'}); if(!groups[k]) groups[k]=[]; groups[k].push(n); });
+  list.innerHTML = Object.entries(groups).map(([day,notes])=>`
+    <div class="notes-day-label">${day}</div>
+    ${notes.map(n=>`<div class="note-card">${n.tag?`<span class="note-card-tag ${n.tag}">${n.tag}</span>`:''}
+      <p>${n.text.replace(/\n/g,'<br>')}</p>
+      <div class="note-card-date">${new Date(n.date).toLocaleTimeString('fr-CA',{hour:'2-digit',minute:'2-digit'})}</div>
+    </div>`).join('')}
+  `).join('');
+}
+
+let editGoalIdx = -1;
+let tempGoalSteps = [];
+
+function openGoalModal(idx) {
+  editGoalIdx = idx;
+  const g = idx >= 0 ? state.goals[idx] : {title:'',color:'var(--green)',steps:[]};
+  document.getElementById('goalModalTitle').textContent = idx >= 0 ? 'Modifier l\'objectif' : 'Nouvel objectif';
+  document.getElementById('gTitle').value = g.title;
+  document.getElementById('gColor').value = g.color;
+  tempGoalSteps = [...g.steps];
+  document.getElementById('goalDeleteBtn').style.display = idx >= 0 ? 'block' : 'none';
+  renderGoalStepsList();
+  document.getElementById('goalModal').classList.add('open');
+}
+
+function renderGoalStepsList() {
+  const list = document.getElementById('goalStepsList');
+  list.innerHTML = tempGoalSteps.map((s,i) => `
+    <div class="goal-step-edit-row">
+      <input type="text" value="${s}" oninput="tempGoalSteps[${i}]=this.value" placeholder="Étape ${i+1}" />
+      <button class="goal-step-del" onclick="removeGoalStep(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function addGoalStep() {
+  tempGoalSteps.push('');
+  renderGoalStepsList();
+  const inputs = document.querySelectorAll('#goalStepsList input');
+  if(inputs.length) inputs[inputs.length-1].focus();
+}
+
+function removeGoalStep(idx) {
+  tempGoalSteps.splice(idx,1);
+  renderGoalStepsList();
+}
+
+function saveGoal() {
+  const title = document.getElementById('gTitle').value.trim();
+  if(!title) return;
+  const steps = tempGoalSteps.map(s=>s.trim()).filter(Boolean);
+  const g = {title, color:document.getElementById('gColor').value, steps};
+  if(editGoalIdx >= 0) {
+    // Preserve done steps where possible
+    state.goals[editGoalIdx] = g;
+  } else {
+    state.goals.push(g);
+  }
+  save(); closeModal('goalModal'); renderGoals();
+}
+
+function deleteGoal() {
+  if(editGoalIdx >= 0) {
+    state.goals.splice(editGoalIdx,1);
+    // Clean up steps
+    const newSteps = {};
+    Object.keys(state.goalSteps).forEach(k => {
+      const gi = parseInt(k.split('_')[0]);
+      if(gi < editGoalIdx) newSteps[k] = state.goalSteps[k];
+      else if(gi > editGoalIdx) newSteps[(gi-1)+'_'+k.split('_')[1]] = state.goalSteps[k];
+    });
+    state.goalSteps = newSteps;
+  }
+  save(); closeModal('goalModal'); renderGoals();
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function updateDate() {
+  const now = new Date();
+  document.getElementById('dateBadge').textContent = now.toLocaleDateString('fr-CA',{weekday:'short',day:'numeric',month:'short'});
+}
+
+// INIT
+load();
+updateDate();
+renderTimeline();
+renderHabits();
+renderGoals();
+renderNotes();
+if(state.calUrl) renderCal();
+</script>
+</body>
+</html>
